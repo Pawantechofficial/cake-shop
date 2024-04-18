@@ -3,7 +3,7 @@ import Image from "next/image";
 import React from "react";
 import logo from "../../public/logo.png";
 import Link from "next/link";
-import { ToastContainer } from "react-toastify";
+import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { AiOutlineSearch } from "react-icons/ai";
 import { FaRegHeart } from "react-icons/fa";
@@ -29,8 +29,10 @@ import WishlistSidebar from "./WishlistSidebar";
 import SearchBar from "./SearchBar";
 import DropDownProfile from "./DropDownProfile";
 import { useRouter } from "next/navigation";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { store } from "../provider/redux/store";
+import { removeUser } from "../provider/redux/slice/user.slice";
+import { useLogoutUserMutation } from "../provider/redux/query/Auth.query";
 
 const Header = () => {
   const Authuser = useSelector((store) => store?.userSlice?.user);
@@ -56,7 +58,22 @@ const Header = () => {
     }
     router.push(`/search?query=${search}`);
   };
+  const dispatch = useDispatch();
   console.log({ Authuser });
+  const [logoutUser, logoutUserResponse] = useLogoutUserMutation();
+  const logoutHandler = async () => {
+    try {
+      const { data, error } = await logoutUser();
+      if (error) {
+        console.log(error);
+        return;
+      }
+      toast.success(data.msg);
+      dispatch(removeUser());
+    } catch (error) {
+      toast.error(error.message);
+    }
+  };
   return (
     <>
       <ToastContainer />
@@ -139,22 +156,34 @@ const Header = () => {
               />
             </div>
             <div className="text-zinc-900 hidden md:block hover:text-[#00B4D8]">
-              <DropdownMenu>
-                <DropdownMenuTrigger>
-                  <CgProfile className="text-2xl text-zinc-900" />
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                  <DropdownMenuLabel>My Account</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem>
-                    <Link href={"/profile"}>Profile</Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    <Link href={"/order"}>My Order</Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem>Logout</DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              {!Authuser ? (
+                <button className="bg-[#00B4D8] px-2 py-1 rounded text-white text-sm">
+                  <Link href={"/login"}>Login</Link>
+                </button>
+              ) : (
+                <DropdownMenu>
+                  <DropdownMenuTrigger>
+                    <CgProfile className="text-2xl text-zinc-900" />
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem>
+                      <Link
+                        href={Authuser.role === "admin" ? "/admin" : "/profile"}
+                      >
+                        Profile
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem>
+                      <Link href={"/order"}>My Order</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={logoutHandler}>
+                      Logout
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
             </div>
           </div>
 
@@ -269,7 +298,7 @@ const Header = () => {
       </nav>
       <WishlistSidebar state={{ isOpen, isSidebarOpen }} />
       <Sidebar state={{ isCart, isCartOpen }} />
-      <div className="pb-2 z-40 lg:hidden fixed w-full bg-white">
+      <div className="pb-2 z-40 lg:hidden fixed w-full hidden bg-white">
         <div className="w-full justify-center">
           <form
             onSubmit={searchHandler}

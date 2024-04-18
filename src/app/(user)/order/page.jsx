@@ -1,9 +1,10 @@
 import React from "react";
+import Sidebar from "../../../components/Sidebar";
 
 const page = () => {
   return (
     <div className="mt-20">
-      <h1>This is orders page</h1>
+      <Sidebar />
     </div>
   );
 };
